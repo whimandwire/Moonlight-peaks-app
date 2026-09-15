@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Nocturne — a Moonlight Peaks almanac</title>
+<style>
+:root{
+  --ink:#151021;
+  --deep:#1d1730;
+  --panel:#241d3b;
+  --edge:#3a3055;
+  --moon:#ece7fa;
+  --fog:#a294c4;
+  --blood:#cf4a63;
+  --verdant:#78c497;
+  --candle:#e3b95c;
+  --iris:#8f7ae0;
+  --r:14px;
+  --tabh:66px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(120% 60% at 50% -10%, #2c2348 0%, transparent 60%),
+    var(--ink);
+  color:var(--moon);
+  font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  padding-bottom:calc(var(--tabh) + env(safe-area-inset-bottom));
+  overscroll-behavior-y:contain;
+}
+h1,h2,h3,.serif{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-weight:600;letter-spacing:.01em}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer}
+a{color:var(--iris)}
+
+/* ---------- date bar ---------- */
+.datebar{
+  position:sticky;top:0;z-index:40;
+  padding:calc(env(safe-area-inset-top) + 10px) 14px 10px;
+  background:linear-gradient(180deg,rgba(21,16,33,.98),rgba(21,16,33,.86));
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--edge);
+  display:flex;align-items:center;gap:12px;
+}
+.moondial{
+  width:44px;height:44px;border-radius:50%;flex:0 0 44px;
+  background:conic-gradient(var(--candle) var(--fill,0deg), #322a4d 0);
+  display:grid;place-items:center;position:relative;
+}
+.moondial i{
+  position:absolute;inset:5px;border-radius:50%;background:var(--deep);
+  display:grid;place-items:center;font-style:normal;font-size:15px;font-weight:700;
+}
+.dateinfo{flex:1;min-width:0}
+.dateinfo b{display:block;font-size:17px;font-family:"Iowan Old Style",Georgia,serif}
+.dateinfo span{display:block;font-size:12.5px;color:var(--fog);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nightbtn{
+  border:1px solid var(--edge);border-radius:999px;padding:9px 14px;
+  font-size:13px;font-weight:600;background:var(--panel);white-space:nowrap;
+}
+.nightbtn:active{background:var(--edge)}
+
+#nosave{
+  display:none;flex-direction:column;gap:7px;margin:0;padding:13px 16px;
+  background:rgba(207,74,99,.12);border-bottom:1px solid rgba(207,74,99,.4);font-size:13px;
+}
+#nosave b{color:var(--blood);font-size:13.5px}
+#nosave span{color:var(--fog);line-height:1.45}
+#nosave button{align-self:flex-start;border:1px solid var(--edge);border-radius:9px;padding:8px 13px;font-size:12.5px;background:var(--panel)}
+
+/* ---------- layout ---------- */
+main{padding:14px 14px 28px;max-width:640px;margin:0 auto}
+.view{display:none}
+.view.on{display:block}
+section{margin-bottom:18px}
+.sechead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 9px}
+.sechead h2{font-size:19px;margin:0}
+.sechead .meta{font-size:12.5px;color:var(--fog)}
+
+.card{background:var(--panel);border:1px solid var(--edge);border-radius:var(--r);padding:14px}
+.card + .card{margin-top:10px}
+
+/* ---------- tonight hero ---------- */
+.hero{
+  background:linear-gradient(160deg,#2b2249,#1d1730 70%);
+  border:1px solid var(--edge);border-radius:20px;padding:18px 16px;position:relative;overflow:hidden;
+}
+.hero:after{content:"";position:absolute;right:-40px;top:-50px;width:150px;height:150px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,rgba(227,185,92,.22),transparent 62%)}
+.hero h1{margin:0;font-size:26px;line-height:1.15}
+.hero .sub{color:var(--fog);font-size:13.5px;margin-top:4px}
+.loadbar{height:9px;border-radius:99px;background:#322a4d;margin-top:14px;overflow:hidden;display:flex}
+.loadbar i{display:block;height:100%}
+.loadnote{font-size:12.5px;margin-top:7px;color:var(--fog)}
+.loadnote.warn{color:var(--candle)}
+.loadnote.over{color:var(--blood)}
+
+/* ---------- task rows ---------- */
+.row{display:flex;align-items:flex-start;gap:11px;padding:11px 0;border-bottom:1px solid rgba(58,48,85,.7)}
+.row:last-child{border-bottom:0}
+.tick{
+  width:26px;height:26px;flex:0 0 26px;border-radius:8px;border:1.5px solid var(--edge);
+  background:#1b1530;display:grid;place-items:center;margin-top:1px;font-size:15px;color:transparent;
+}
+.tick.on{background:var(--verdant);border-color:var(--verdant);color:#12301f}
+.rowbody{flex:1;min-width:0}
+.rowbody b{font-weight:600;font-size:15px;display:block}
+.done .rowbody b{text-decoration:line-through;opacity:.5}
+.rowbody small{color:var(--fog);font-size:12.5px}
+.pill{display:inline-block;font-size:11px;padding:2px 7px;border-radius:99px;border:1px solid var(--edge);color:var(--fog);margin-right:5px}
+.pill.farm{color:var(--verdant);border-color:rgba(120,196,151,.4)}
+.pill.social{color:#f0a0b4;border-color:rgba(207,74,99,.4)}
+.pill.quest{color:var(--candle);border-color:rgba(227,185,92,.4)}
+.pill.job{color:#8fc4e0;border-color:rgba(143,196,224,.4)}
+.pill.museum{color:var(--iris);border-color:rgba(143,122,224,.45)}
+.xbtn{color:var(--fog);font-size:20px;padding:0 4px;line-height:1}
+
+/* ---------- calendar ---------- */
+.seasontabs{display:flex;gap:6px;margin-bottom:12px}
+.seasontabs button{
+  flex:1;padding:9px 0;border-radius:10px;border:1px solid var(--edge);
+  font-size:13px;font-weight:600;background:var(--deep);color:var(--fog)
+}
+.seasontabs button.on{background:var(--panel);color:var(--moon);border-color:var(--iris)}
+.dow{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:5px}
+.dow span{text-align:center;font-size:10.5px;color:var(--fog)}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.day{
+  aspect-ratio:1/1.18;border-radius:10px;border:1px solid var(--edge);background:var(--deep);
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  padding:5px 2px 3px;position:relative;
+}
+.day .n{font-size:12.5px;font-weight:600;line-height:1}
+.day.today{border-color:var(--candle);box-shadow:0 0 0 1px var(--candle) inset}
+.day.sel{background:var(--iris);border-color:var(--iris);color:#fff}
+.day.past{opacity:.45}
+.dots{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;margin-top:4px}
+.dots i{width:5px;height:5px;border-radius:50%;background:var(--fog)}
+.day .mark{position:absolute;top:2px;right:3px;font-size:9px}
+.heat{position:absolute;left:4px;right:4px;bottom:3px;height:3px;border-radius:2px;background:#3a3055;overflow:hidden}
+.heat i{display:block;height:100%}
+
+/* ---------- forms ---------- */
+label.f{display:block;font-size:12.5px;color:var(--fog);margin:12px 0 5px}
+input[type=text],input[type=number],select,textarea{
+  width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--edge);
+  background:#1b1530;color:var(--moon);-webkit-appearance:none;font-size:16px;
+}
+textarea{min-height:60px;resize:vertical}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:8px 12px;border-radius:999px;border:1px solid var(--edge);background:#1b1530;font-size:13px;color:var(--fog)}
+.chip.on{background:var(--iris);border-color:var(--iris);color:#fff}
+.btn{
+  display:block;width:100%;padding:14px;border-radius:12px;background:var(--iris);color:#fff;
+  font-weight:700;font-size:15px;text-align:center;margin-top:16px;
+}
+.btn.ghost{background:transparent;border:1px solid var(--edge);color:var(--moon)}
+.btn.danger{background:transparent;border:1px solid rgba(207,74,99,.5);color:var(--blood)}
+.btn:active{filter:brightness(.9)}
+.btnrow{display:flex;gap:8px}
+.btnrow .btn{flex:1}
+
+/* ---------- wizard ---------- */
+.wiz{position:fixed;inset:0;z-index:95;background:
+  radial-gradient(120% 55% at 50% 0%, #2c2348 0%, transparent 60%), var(--ink);
+  overflow:auto;-webkit-overflow-scrolling:touch;display:none}
+.wiz.on{display:block}
+.wizbox{max-width:560px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 26px) 20px calc(40px + env(safe-area-inset-bottom))}
+.wizdots{display:flex;gap:6px;margin-bottom:22px}
+.wizdots i{height:3px;flex:1;border-radius:9px;background:#322a4d}
+.wizdots i.on{background:var(--candle)}
+.wizsub{color:var(--fog);font-size:13.5px;line-height:1.5;margin:0 0 4px}
+
+/* ---------- sheet ---------- */
+.sheet{
+  position:fixed;inset:0;z-index:80;background:rgba(10,7,18,.6);
+  display:none;align-items:flex-end;backdrop-filter:blur(3px);
+}
+.sheet.on{display:flex}
+.sheetbox{
+  width:100%;max-height:88vh;overflow:auto;background:var(--deep);
+  border-radius:20px 20px 0 0;border-top:1px solid var(--edge);
+  padding:8px 16px calc(24px + env(safe-area-inset-bottom));
+  -webkit-overflow-scrolling:touch;
+}
+.grab{width:38px;height:4px;border-radius:9px;background:var(--edge);margin:8px auto 12px}
+
+/* ---------- villagers ---------- */
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:9px}
+.vcard{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:9px 6px;text-align:center;position:relative}
+.av{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;
+  position:relative;overflow:hidden;margin:0 auto 4px;flex:0 0 54px}
+.av b{font-size:24px;line-height:1;font-weight:400;text-shadow:0 1px 3px rgba(0,0,0,.45)}
+.av img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.av.sm{width:36px;height:36px;margin:0;flex:0 0 36px}
+.av.sm b{font-size:17px}
+.av.lg{width:70px;height:70px;flex:0 0 70px;margin:0}
+.av.lg b{font-size:32px}
+.vcard img{width:54px;height:54px;object-fit:contain;display:block;margin:0 auto 4px}
+.fb{width:54px;height:54px;margin:0 auto 4px;border-radius:50%;background:#2f2750;display:grid;place-items:center;font-size:20px}
+.vcard .fb{width:54px;height:54px;margin:0 auto 4px;border-radius:50%;background:#2f2750;display:grid;place-items:center;font-size:20px}
+.vcard b{display:block;font-size:12.5px;font-weight:600}
+.vcard small{display:block;font-size:10.5px;color:var(--fog)}
+.vcard .hb{margin-top:4px;font-size:10px;color:var(--blood)}
+.vcard.soon{border-color:var(--candle)}
+.vcard .bdaytag{position:absolute;top:-6px;right:-4px;background:var(--candle);color:#2a1f05;font-size:9.5px;font-weight:800;border-radius:99px;padding:2px 6px}
+
+.hearts{display:flex;gap:3px;flex-wrap:wrap;margin-top:6px}
+.hearts button{width:26px;height:26px;font-size:17px;line-height:1;color:#4b3f6b}
+.hearts button.on{color:var(--blood)}
+.step{width:36px;height:36px;border-radius:9px;border:1px solid var(--edge);background:#1b1530;font-size:18px;line-height:1;flex:0 0 36px}
+.hval{width:28px;text-align:center;font-weight:700;font-size:15px}
+
+/* ---------- museum ---------- */
+.wing{border:1px solid var(--edge);border-radius:var(--r);overflow:hidden;margin-bottom:9px;background:var(--panel)}
+.wing > button{width:100%;display:flex;align-items:center;gap:10px;padding:13px 14px;text-align:left}
+.wing h3{margin:0;font-size:15px;flex:1}
+.wingbar{width:56px;height:6px;border-radius:99px;background:#3a3055;overflow:hidden;flex:0 0 56px}
+.wingbar i{display:block;height:100%;background:var(--verdant)}
+.wing .items{display:none;padding:0 14px 8px}
+.wing.open .items{display:block}
+.pct{font-size:11.5px;color:var(--fog);min-width:34px;text-align:right}
+
+/* ---------- crops ---------- */
+.croprow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid rgba(58,48,85,.7)}
+.croprow:last-child{border-bottom:0}
+.croprow .cn{flex:1;min-width:0}
+.croprow b{font-size:14.5px;display:block}
+.croprow small{color:var(--fog);font-size:12px}
+.seasondot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:3px}
+.plantbtn{border:1px solid var(--edge);border-radius:9px;padding:7px 11px;font-size:12.5px;color:var(--verdant)}
+
+.searchwrap{position:relative;margin-bottom:10px}
+.empty{text-align:center;color:var(--fog);font-size:13.5px;padding:22px 10px}
+.tip{font-size:12.5px;color:var(--fog);background:rgba(143,122,224,.09);border:1px solid rgba(143,122,224,.25);border-radius:10px;padding:10px 12px;margin-top:10px}
+
+/* ---------- tab bar ---------- */
+nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:50;
+  height:calc(var(--tabh) + env(safe-area-inset-bottom));
+  padding-bottom:env(safe-area-inset-bottom);
+  background:rgba(29,23,48,.97);backdrop-filter:blur(14px);
+  border-top:1px solid var(--edge);display:flex;
+}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--fog);font-size:10.5px}
+nav button.on{color:var(--moon)}
+nav button span:first-child{font-size:19px;line-height:1}
+nav button.on span:first-child{filter:drop-shadow(0 0 7px rgba(227,185,92,.5))}
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--tabh) + 22px);
+  background:var(--panel);border:1px solid var(--iris);border-radius:99px;padding:10px 18px;
+  font-size:13.5px;z-index:90;opacity:0;pointer-events:none;transition:opacity .18s
+}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+:focus-visible{outline:2px solid var(--candle);outline-offset:2px}
+</style>
+</head>
+<body>
+
+<header class="datebar">
+  <button class="moondial" id="dial" aria-label="Change date"><i id="dialday">1</i></button>
+  <div class="dateinfo" id="dateinfo"></div>
+  <button class="nightbtn" id="nextnight">End night →</button>
+</header>
+
+<div id="nosave" style="display:none">
+  <b>Progress won't save here.</b>
+  <span>This viewer blocks storage. Download the file and open it in Safari — then Share → Add to Home Screen — and it saves properly.</span>
+  <button id="nosave-backup">Copy a backup now</button>
+</div>
+<main>
+  <div class="view on" id="v-tonight"></div>
+  <div class="view" id="v-plan"></div>
+  <div class="view" id="v-town"></div>
+  <div class="view" id="v-museum"></div>
+  <div class="view" id="v-farm"></div>
+</main>
+
+<nav>
+  <button data-v="tonight" class="on"><span>🌙</span><span>Tonight</span></button>
+  <button data-v="plan"><span>🗓</span><span>Plan</span></button>
+  <button data-v="town"><span>🩸</span><span>Town</span></button>
+  <button data-v="museum"><span>🏛</span><span>Museum</span></button>
+  <button data-v="farm"><span>🌱</span><span>Farm</span></button>
+</nav>
+
+<div class="wiz" id="wiz"></div>
+<div class="sheet" id="sheet"><div class="sheetbox" id="sheetbox"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ GAME DATA (from moonlightpeaks.wiki.gg) ============ */
+const SEASONS=["Spring","Summer","Autumn","Winter"];
+const SEASON_ICON={Spring:"🌸",Summer:"☀️",Autumn:"🍂",Winter:"❄️"};
+const SEASON_COL={Spring:"#78c497",Summer:"#e3b95c",Autumn:"#d98452",Winter:"#8fc4e0"};
+const DOW=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const DAYS_PER_SEASON=28, YEAR=112;
+const IMG=n=>"https://moonlightpeaks.wiki.gg/images/thumb/"+n+"_Chibi.png/100px-"+n+"_Chibi.png";
+
+/* name, img slug, season, day, group, loved, likes, dislikes */
+
+/* name -> [emoji, colour] */
+const FACE={
+ "Orlock":["🍷","#8e2c3f"],"Mina":["🧁","#d96a97"],"Evan":["☕","#4a3b63"],
+ "Samael":["🥀","#7a2233"],"Elvira":["🥤","#a3438b"],"Jarvis":["👻","#4fbfc4"],
+ "Vlad":["🧛","#9c2130"],"Laveau":["🕯️","#c2903c"],"Viktor":["⚗️","#4f7a4a"],
+ "Brook":["🐺","#8a6a3d"],"Saga":["🔥","#c94a3a"],"Ridge":["🪵","#c2702a"],
+ "Ludo":["🥞","#3f9c9c"],"Balthasar":["👻","#4fbfc4"],"Yasmin":["👻","#4fbfc4"],
+ "Fiona":["👑","#5f7fa8"],"Noel":["🐟","#6a5fa8"],"Sabrina":["🪻","#7b4fb0"],
+ "Luna":["🌼","#6a4fb5"],"Hoodini":["🦉","#c9c6dd"],
+ "Dragan":["🃏","#b03a3a"],"Aras":["🍲","#a8683a"],"Alina":["🖤","#4a2438"],
+ "Persephone":["🌺","#c05a7a"],"Jada":["🏺","#b07a3a"],"Winston":["🌷","#4a6fa8"],
+ "Rei":["🐚","#d9b84a"],"Tae":["🧜","#e07aa8"],"Kim":["🌸","#e08ab0"],
+ "Death":["🪦","#3d3a52"],"Llemi":["🏹","#a8443f"],"Moon Goddess":["🌙","#8fa8c9"],
+ "Sun God":["☀️","#d99a3a"],"Pumpkin Head":["🎃","#c2702a"],"Skull Girl":["💀","#7a7a8c"],
+ "Jacques":["🛋️","#8a5a7a"],"Snek":["🐍","#5a8a4a"],"Yabbis":["🐇","#9c8a6a"],
+ "Albertus":["🦉","#8a6a4a"],"Chester":["📦","#8a7050"],"Mr. Deyes":["🎲","#4a4a6a"],
+ "Grim":["😼","#6a4a8c"]
+};
+function avatar(name,cls){
+  const v=VILLAGERS.find(x=>x[0]===name);
+  const f=FACE[name]||["🦇","#5a4a7a"];
+  return `<span class="av ${cls||""}" style="background:linear-gradient(150deg,${f[1]},rgba(0,0,0,.6))">
+    <b>${f[0]}</b>${v?`<img src="${IMG(v[1])}" alt="" data-fb loading="lazy">`:""}</span>`;
+}
+const VILLAGERS=[
+ ["Yabbis","Yabbis",0,2,"vendor",[],[],[]],
+ ["Persephone","Persephone",0,7,"romance",["Handmade Flower Bouquet (unconfirmed)"],["Raspberry Jam","Sugarbone"],[]],
+ ["Alina","Alina",0,10,"romance",["Black Rose","Black Tulips"],["Blue Rose","Purple Tulip","Pink Tulips","Red Tulips","Purple Azalea"],[]],
+ ["Winston","Winston",0,13,"romance",[],[],[]],
+ ["Moon Goddess","Moon_Goddess",0,14,"deity",[],["Purple Plumeria"],[]],
+ ["Kim","Kim",0,19,"romance",[],[],[]],
+ ["Laveau","Laveau",0,22,"other",[],[],[]],
+ ["Noel","Noel",0,23,"romance",[],["Blood Grapes","Strawberry Milkshake","Violet","Whisper","Brickle","Mana Essence"],["Most flowers","Red Starfish"]],
+ ["Elvira","Elvira",0,24,"romance",[],["White Rose","Purple Lavender","Purple Tulips","Yellow Tulips","Purple Azalea","Yellow Azalea","Red Lavender","Pink Azalea"],["Aura"]],
+ ["Dragan","Dragan",0,28,"romance",[],["White Rose","Purple Tulip","Red Tulips","Purple Plumeria","Blue Rose"],["Seaweed"]],
+ ["Sun God","Sun_God",1,1,"deity",[],[],[]],
+ ["Balthasar","Balthasar",1,3,"other",[],[],[]],
+ ["Yasmin","Yasmin",1,7,"other",[],[],[]],
+ ["Llemi","Llemi",1,8,"romance",[],["Red Wine"],["Skully"]],
+ ["Mina","Mina",1,16,"romance",["Pink Azalea"],["Honey","Purple Tulip","Yellow Azalea"],[]],
+ ["Luna","Luna",1,19,"romance",["Purple Tulip","Purple Azalea","Pink Azalea","Red Lavender","Yellow Tulips","Purple Plumeria"],[],[]],
+ ["Brook","Brook",1,21,"friend",[],[],[]],
+ ["Skull Girl","Skull_Girl",1,24,"friend",[],[],[]],
+ ["Saga","Saga",1,27,"romance",["Purple Kthonia","Golden Egg"],["Red Azalea","Yellow Azalea","Purple Azalea","Yellow Rose","Yellow Tulips","Blood Grape Juice","Strawberry Cupcake","White Wine"],["Pink Conch","Pink Swallow"]],
+ ["Snek","Snek",2,4,"vendor",[],[],[]],
+ ["Aras","Aras",2,8,"romance",["Purple Moonlight Flower","Golden Egg","Mushroom Stew","Chilly Soup","Sunburst Stew"],["Red Azalea","Blue Rose","Purple Tulip","Purple Kthonia","Gazpacho Soup"],["Honey"]],
+ ["Pumpkin Head","Pumpkin_Head",2,10,"friend",[],[],[]],
+ ["Jacques","Jacques",2,13,"vendor",[],[],[]],
+ ["Ridge","Ridge",2,18,"romance",[],["Purple Lavender","Purple Tulip","White Rose","Purple Rose","Purple Azalea"],["Cloth","Ash Tree Seed","Pine Tree Seed"]],
+ ["Ludo","Ludo",2,20,"romance",[],["Purple Tulip","Blood Grapes","Moonfruit"],["Honey"]],
+ ["Rei","Rei",2,22,"romance",[],[],[]],
+ ["Evan","Evan",2,25,"romance",["Black Tulips"],["Pink Azalea","Purple Tulip","Purple Lavender","Red Lavender","White Tulips","Red Tulips"],["Maxima Clam"]],
+ ["Jada","Jada",3,1,"romance",[],[],["Handmade Vase (unconfirmed)"]],
+ ["Viktor","Viktor",3,3,"other",[],[],[]],
+ ["Tae","Tae",3,5,"romance",[],[],[]],
+ ["Vlad","Vlad",3,11,"other",[],[],[]],
+ ["Jarvis","Jarvis",3,13,"other",[],[],[]],
+ ["Orlock","Orlock",3,16,"romance",["Red Wine","Blood Orange Cupcake"],["Yellow Azalea","Purple Azalea","Purple Tulip","Pink Azalea"],[]],
+ ["Samael","Samael",3,19,"romance",["Red Wine","White Wine"],["Purple Azalea","Purple Rose","White Tulips","Red Azalea"],["Pink Azalea"]],
+ ["Sabrina","Sabrina",3,23,"romance",["Purple Tulip","Purple Azalea","Purple Kthonia","Purple Rose","Purple Lavender"],["White Rose","Black Tulips","Yellow Tulips"],[]],
+ ["Fiona","Fiona",3,26,"romance",["White Tulips"],["Purple Tulip","Purple Lavender"],["Seaweed"]],
+ ["Death","Death",-1,0,"romance",["Trash Bottle","Rusty Fish Can","Rusty Soda Can","Black Azalea"],[],[]],
+ ["Hoodini","Hoodini",-1,0,"other",[],[],[]],
+ ["Grim","Hellkitten",-1,0,"other",[],[],[]],
+ ["Chester","Chester",-1,0,"other",[],[],[]],
+ ["Albertus","Albertus",-1,0,"other",[],[],[]],
+ ["Mr. Deyes","Mr._Deyes",-1,0,"other",[],[],[]]
+];
+
+const FESTIVALS=[
+ [0,20,"Loveage Festival"],[0,21,"Loveage Festival"],
+ [1,20,"Moonlight Ball"],
+ [2,5,"Mastersoup Event"],
+ [2,26,"Evernight Festival"],[2,27,"Evernight Festival"],[2,28,"Evernight Festival"],
+ [3,28,"Winterwake"]
+];
+
+/* name, seasons(idx), growDays, regrowDays(0=none), yield, sell, seedCost, kind */
+const CROPS=[
+ ["Wild Potato",[0],3,0,3,20,20,"crop"],
+ ["Onion",[0,1,2,3],4,0,1,40,10,"crop"],
+ ["Wily Wheat",[0,1,2,3],4,0,1,60,30,"crop"],
+ ["Blood Grapes",[0,1],5,4,3,5,20,"crop"],
+ ["White Grapes",[0,1],5,4,3,10,20,"crop"],
+ ["Sugarbone",[0,1],5,0,3,30,60,"crop"],
+ ["Unmilled Rice",[0,1,2],5,0,1,60,30,"crop"],
+ ["Blood Tomato",[0,1,2,3],6,0,3,15,20,"crop"],
+ ["Carrot",[0],6,0,1,160,80,"crop"],
+ ["Eggplant",[0],6,0,1,90,40,"crop"],
+ ["Radish",[2],6,0,1,90,20,"crop"],
+ ["Red Corn",[1,2],6,0,2,40,40,"crop"],
+ ["Moonfruit",[0,1,2,3],6,0,3,55,100,"magic"],
+ ["Happy Mandrake",[2],6,0,1,330,200,"magic"],
+ ["Angry Mandrake",[2],6,0,1,280,200,"magic"],
+ ["Gobbler",[1],6,0,1,550,350,"magic"],
+ ["Cruelcumber",[0],7,4,1,40,30,"crop"],
+ ["Melon",[1,2],7,6,1,50,40,"crop"],
+ ["Raspberry",[0,1],7,2,3,6,20,"crop"],
+ ["Strawberry",[0,1],7,3,3,9,30,"crop"],
+ ["Blackberry",[3],8,2,3,10,80,"crop"],
+ ["Cranberry",[2,3],8,4,3,10,50,"crop"],
+ ["Lava Pepper",[2],8,2,3,8,30,"crop"],
+ ["Clawy Vera",[3],8,0,1,220,120,"magic"],
+ ["Blueberry",[0,3],9,3,3,10,20,"crop"],
+ ["Pumpkin",[2],9,0,1,220,90,"crop"],
+ ["Skunktail",[1],9,0,1,180,80,"crop"],
+ ["Dark Strawberry",[3],9,3,3,25,200,"magic"],
+ ["Drikker",[0,1],9,0,1,500,280,"magic"],
+ ["Sunburst",[1,2],9,0,1,260,140,"magic"],
+ ["Void Radish",[3],9,0,1,330,220,"magic"],
+ ["Black Sun Currant",[3],12,2,3,20,160,"magic"],
+ ["Hold-Me-Close",[0,3],13,0,1,260,180,"magic"],
+ ["Sweet Wicca",[0,3],13,0,1,550,250,"magic"],
+ ["Weeping Wicca",[0,3],13,0,1,300,250,"magic"]
+];
+const HERBS=[
+ ["Purple Lavender",[0,3],15,10],["Red Lavender",[0,3],15,10],
+ ["Glow Ginger",[1],100,50],["Googly Garlic",[0,1,2],150,120],
+ ["Henbane",[0],230,180],["Sage",[1],0,0],["Suffrain",[2],0,0],
+ ["Nightshade",[0,1,2,3],0,0],["Wolfsbane",[0,1,2,3],0,0]
+];
+const MUSHROOMS=[
+ ["Common Mushroom",[1,2]],["Amanita",[1,2]],["Frosteria",[3]],
+ ["Glowglammer",[1,3]],["Yellow Glowglammer",[1]],["Volacio",[1,3]]
+];
+const NOTES={
+ "Drikker":"Fill its cup with water to grow",
+ "Gobbler":"Feed it two fish or critters",
+ "Sweet Wicca":"Plant within 2 tiles of a Hold-Me-Close",
+ "Weeping Wicca":"Keep 2+ tiles from Hold-Me-Close; waters a 3×3 patch",
+ "Hold-Me-Close":"Stops nearby Wiccas crying",
+ "Happy Mandrake":"Plant 2+ tiles from another mandrake",
+ "Angry Mandrake":"Plant within 2 tiles of another mandrake",
+ "Sugarbone":"Plant near water to grow taller"
+};
+
+const MUSEUM=[
+ ["Witch Collection","Supernatural Room",[
+  ["Mystic Cauldron","Dig spots — relic"],["Mana Extractor","Quest: Building a Mana Extractor"],
+  ["Cosmic Globe","Dig spots — relic"],["Googly Soup","Cook ★★ — mushroom + dried googly garlic"],
+  ["Witch's Hat","Dig spots or mining"]]],
+ ["Vampire Collection","Supernatural Room",[
+  ["Red Wine","Keg ★★ — 4 blood grapes"],["Bloody Mana Mary","Mana cookbook ★★"],
+  ["Gothic Mirror","Craft — black or purple"],["Black Azalea","Forage, Summer/Winter"],
+  ["Bat Skull","Dig spots or mining"],["Malakar's Coffin","Bat nooks"],["Blood Chalice","Bat nooks"]]],
+ ["Seer Collection","Supernatural Room",[
+  ["Moon Crystal","Mining — Crystal Cave"],["Seer Board","Dig spots or mining"],
+  ["Blue Moonlight Flower","Moonlit Pines/Slopes, Spring"],["White Rose","Forage, Spring/Summer"],
+  ["Decorative Glass Pane","Craft — recipe in bat nooks"],["Coil of Fate","Dig spots"],
+  ["Third Eye Hand","Dig spots or mining"]]],
+ ["Werewolf Collection","Supernatural Room",[
+  ["Farmer's Stew","Cook ★★ — 2 blood tomato + eggplant"],["Wolfsbane Powder","Dry then grind wolfsbane"],
+  ["Fur Chair","Craft — brown"],["Mana Moon Cupcake","Mana cookbook ★★"],
+  ["Wolf's Prey","Dig spots"],["Moonreaver","Dig spots or mining"],["The Timber Beast","Dive pools"]]],
+ ["Mermaid Collection","Supernatural Room",[
+  ["Fishy Milkshake","From Kim at 2 hearts"],["Poseidon's Trident","Dig spots"],
+  ["Beach Lantern","Craft"],["Aquatic Cabinet","Craft — blue"],["Dried Seaweed","Dry seaweed on a rack"],
+  ["Shell Lantern","Dive pools"],["Seahorse Sculpture","Dive pools"],["Altar Ornament","Dive pools"]]],
+ ["Deity Room","Deity Room",[
+  ["Sun God's Halo","Sun God, 4 hearts"],["Chakra Tuner","Moon Goddess, 4 hearts"],
+  ["Death's Tomb","Death, 4 hearts"],["Llemi's Bow","Llemi, 4 hearts"]]],
+ ["Aquarium","Aquarium",[
+  ["Whisper","All waters except Silverveil — common"],["Splotch","Silverveil Lake — common"],
+  ["Missing","All waters — uncommon"],["Violet","Moonlit Pines — uncommon"],
+  ["Daybreaker","Moonlit Pines, 3–6am — uncommon"],["Orbis","Silverveil Lake — uncommon"],
+  ["Goldy","Rivers to Silverveil, Spring/Summer"],["Brickle","Howling Marshes — uncommon"],
+  ["Glammer","Pink Grove — uncommon"],["Glibby","Rivers to Silverveil — uncommon"],
+  ["Leftsee","Twilight Catacombs — uncommon"],["Mouthout","Silverveil Lake, rain — uncommon"],
+  ["Gnasher","Rivers to Silverveil — uncommon"],["Moonflutter","Luna Bay, full moon — uncommon"],
+  ["Snuffy","Luna Bay — uncommon"],["Twilight","Luna Bay, 18:00–20:00 — uncommon"],
+  ["Amour","Pink Grove — rare"],["Fortipod","Silverveil Lake, Winter — rare"],
+  ["Furybud","Luna Bay — rare"],["Gloy Gloy","Howling Marshes — rare"],
+  ["Skullfin","Crystal Cave / Cave of Echoes / Catacombs — rare"],["Goliath","Moonlit Pines — very rare"]]],
+ ["Critter Room — Beetles","Critter Room",[
+  ["Bluey","Luna Bay"],
+  ["Blushbug","Luna Bay"],
+  ["Buzzer","Crest Garden, Misty Shores, Moonlit Pines, farm, Town · thunderstorms"],
+  ["Inferwing","Moonlit Slopes"],
+  ["Loomer","Moonlit Slopes"],
+  ["Lovepuff","Farm · after marriage"],
+  ["Midnight","Farm · 23:30–00:30"],
+  ["Mossback","Howling Marshes"],
+  ["Murky","Howling Marshes"],
+  ["Pinky","Pink Grove"],
+  ["Psyclops","Howling Marshes, Moonlit Pines · in Yabbis' spots"],
+  ["Purpy","Farm"],
+  ["Skullglint","Ambrosia Graveyard · Summer"],
+  ["Twizzler","Misty Shores, Moonlit Pines · at cave mouths"]]],
+ ["Critter Room — Butterflies","Critter Room",[
+  ["Amethyst Wing","Moonlit Pines"],
+  ["Aura","Misty Shores, Moonlit Pines, farm · 280g"],
+  ["Autumn Wing","Farm · last night of Autumn"],
+  ["Batterfly","Cave of Echoes"],
+  ["Begoniflap","Moonlit Slopes"],
+  ["Beige Breezer","Pink Grove · 18:00–03:00"],
+  ["Blue Gulf","Moonlit Pines"],
+  ["Blue Swallow","Moonlit Pines · Autumn, Winter"],
+  ["Blueleaf","Crest Garden, Misty Shores, farm, Town"],
+  ["Citrineflutter","Misty Shores · 03:00–06:00, Su/Au"],
+  ["Diamontra","Cave of Echoes · breaking rocks"],
+  ["Fader","Cave of Echoes · breaking rocks"],
+  ["Flamboyance","Luna Bay, Misty Shores, Moonlit Pines, farm · clearing weeds"],
+  ["Frost Flutter","Misty Shores, Moonlit Pines, farm, Town · Winter"],
+  ["Frostleaf","Crest Garden, Moonlit Pines, Moonlit Slopes, farm"],
+  ["Green Lady","Farm · Spring"],
+  ["Green Petal","Moonlit Pines · clearing weeds"],
+  ["Haunted Page","Town Hall · Spring, Summer"],
+  ["Indigowisp","Luna Bay"],
+  ["Jader","Cave of Echoes · breaking rocks"],
+  ["Kamehameha","Crest Garden"],
+  ["Lakeflutter","Misty Shores · 18:00–22:00"],
+  ["Limer","Howling Marshes"],
+  ["Moon Glimmer","Lost Moon Alcove"],
+  ["Orange Flutter","Farm · Summer"],
+  ["Orange Petal","Misty Shores, Moonlit Pines, farm · clearing weeds"],
+  ["Peachbliss","Pink Grove"],
+  ["Petal Flap","Moonlit Pines, Misty Shores, farm · clearing weeds or flowers"],
+  ["Phlox","Moonlit Slopes · chopping trees"],
+  ["Pink Breezer","Pink Grove · 03:00–06:00"],
+  ["Pink Glow","Crystal Cave, Pink Grove"],
+  ["Pink Gulf","Pink Grove · shaking trees"],
+  ["Pink Handyflap","Twilight Catacombs"],
+  ["Pink Kite","Pink Grove"],
+  ["Pink Petal","Howling Marshes · clearing weeds, dig spots"],
+  ["Pink Sliver","Howling Marshes · clearing weeds, dig spots"],
+  ["Pink Swallow","Crest Garden, Moonlit Pines, farm, Town"],
+  ["Pinkleaf","Crystal Cave"],
+  ["Purple Flap","Luna Bay · Autumn"],
+  ["Purple Gulf","Luna Bay"],
+  ["Purple Handyflap","Twilight Catacombs"],
+  ["Purple Morpho","Luna Bay"],
+  ["Purple Sliver","Farm · Winter"],
+  ["Red Flutter","Misty Shores"],
+  ["Red Lady","Moonlit Slopes · clearing weeds"],
+  ["Red Morpho","Moonlit Slopes · 300g, the best seller"],
+  ["Roseleaf","Moonlit Pines · clearing flowers"],
+  ["Rosetide","Misty Shores · Spring, Autumn"],
+  ["Rouge Petal","Misty Shores, Moonlit Pines, farm · clearing weeds, 04:00–06:00"],
+  ["Ruby Wing","Moonlit Slopes"],
+  ["Silver Sister","Luna Bay · Autumn, Winter"],
+  ["Skin Duster","Howling Marshes · clearing weeds"],
+  ["Spotted Wings","Luna Bay, Misty Shores, farm · dig spots"],
+  ["Spring Wing","Farm · last night of Spring"],
+  ["Summer Wing","Farm · last night of Summer"],
+  ["Turquoise Sliver","Moonlit Pines · Winter"],
+  ["Violet Duster","Marshes, Shores, Pines, Slopes, Town, Catacombs · after a Witch's Circle"],
+  ["Vitrawing","Crystal Cave"],
+  ["White Bat","Cave of Echoes · 250g"],
+  ["Winter Wing","Farm · last night of Winter"],
+  ["Yabberwing","Moonlit Slopes · 03:00–06:00"]]],
+ ["Critter Room — Mice, Snails, Spiders & Oddities","Critter Room",[
+  ["Harry","Twilight Catacombs · or gifted by Hellkitten"],
+  ["Maud","Twilight Catacombs · or gifted by Hellkitten"],
+  ["Dreamshell","Khazan Temple, Pink Grove"],
+  ["Shellycone","Luna Bay"],
+  ["Skull Snail","Ambrosia Graveyard · Summer, Winter"],
+  ["Sluggy","Moonlit Pines · rain"],
+  ["Spiral Snail","Howling Marshes"],
+  ["Peeky","Farm · harvesting googly garlic"],
+  ["Pumkrawler","Farm · harvesting pumpkins, Autumn"],
+  ["Skully","Ambrosia Graveyard"],
+  ["Sourbug","Farm · shaking a grown lemon tree"],
+  ["Sprouty","Farm · harvesting any crop"],
+  ["Sweetbug","Farm · shaking a grown blood orange tree"],
+  ["Turdy","Farm · fertiliser bin reaches 100"],
+  ["Sunny","Farm · after cooking a Fried Egg"],
+  ["Deviled Sunny","Moonlit Slopes · after cooking a Fried Egg"],
+  ["Firefly","Moonlit Pines, Howling Marshes"],
+  ["Honeyflutter","Farm"],
+  ["Glorph","Location not documented yet"]]]
+];
+const FARM_ROOM=[...CROPS.map(c=>c[0]),...HERBS.map(h=>h[0]),...MUSHROOMS.map(m=>m[0]),
+ "Blood Orange","Cocoa Beans","Coffee Beans","Lemon","Muse Tree"];
+</script>
+
+<script>
+/* ============ STATE ============ */
+const KEY="moonlight-almanac-v1";
+let S={date:{y:1,s:0,d:1},cap:5,tasks:[],museum:{},vill:{},plots:[],seen:false};
+let view="tonight", planSeason=0, planSel=null, farmFilter="now", farmQ="", townSort="birthday";
+
+const abs=(y,s,d)=>(y-1)*YEAR+s*DAYS_PER_SEASON+d;
+const today=()=>abs(S.date.y,S.date.s,S.date.d);
+const fromAbs=n=>{const k=n-1;return{y:Math.floor(k/YEAR)+1,s:Math.floor((k%YEAR)/DAYS_PER_SEASON),d:(k%DAYS_PER_SEASON)+1}};
+const wdOf=d=>(d-1)%7;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9);
+
+let storageMode="unknown", saveTimer=null;
+async function probeStorage(){
+  if(window.storage&&window.storage.set){
+    try{await window.storage.set(KEY+":probe","1");storageMode="cloud";return}catch(e){}
+  }
+  try{localStorage.setItem(KEY+":probe","1");localStorage.removeItem(KEY+":probe");storageMode="local";return}
+  catch(e){}
+  storageMode="none";
+}
+async function writeStore(v){
+  if(storageMode==="cloud"){try{await window.storage.set(KEY,v);return true}catch(e){storageMode="unknown"}}
+  if(storageMode!=="none"){try{localStorage.setItem(KEY,v);storageMode="local";return true}catch(e){}}
+  storageMode="none"; return false;
+}
+async function readStore(){
+  if(window.storage&&window.storage.get){
+    try{const r=await window.storage.get(KEY); if(r&&r.value) return r.value}catch(e){}
+  }
+  try{const v=localStorage.getItem(KEY); if(v) return v}catch(e){}
+  return null;
+}
+function save(){clearTimeout(saveTimer);saveTimer=setTimeout(async()=>{
+  const ok=await writeStore(JSON.stringify(S));
+  const b=document.getElementById("nosave"); if(b) b.style.display=ok?"none":"flex";
+},350)}
+async function load(){
+  await probeStorage();
+  try{const raw=await readStore(); if(raw) S=Object.assign(S,JSON.parse(raw));}catch(e){}
+  let fixed=false;
+  (S.tasks||[]).forEach(t=>{ if(t.title&&t.title.indexOf("Lina")>-1){
+    t.title=t.title.replace("Lina","Luna"); fixed=true } });
+  if(fixed) save();
+}
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("on");
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("on"),1700)}
+
+
+/* ============ SETUP ============ */
+/* key, label, kind, weight, repeat-kind, on-by-default */
+const CHORES=[
+ ["harvest","Harvest everything","farm",1,"day",1],
+ ["water","Water the crops","farm",1,"day",1],
+ ["barns","Check the barns","farm",1,"day",1],
+ ["kegs","Check the jam and kegs","farm",1,"day",1],
+ ["map","Check the map for cutscenes","quest",1,"day",1],
+ ["animals","Check for new animals for sale","job",1,"day",0],
+ ["pet","Pet the animals","farm",1,"alt",1],
+ ["plant","Plant new crops","farm",1,"alt2",1],
+ ["shops","Check the shops early","job",1,"weekdays",0],
+ ["jobs","Check the job board","job",1,"alt",0],
+ ["honey","Check the honey","farm",1,"sun",0],
+ ["gather","Gather whatever you're low on","job",1,"sun",0],
+ ["seeds","Buy seeds for the week","job",1,"sat",0],
+ ["fodder","Refill the barn fodder","farm",1,"sat2a",0],
+ ["fireflies","Refill the fireflies","farm",1,"sat2b",0],
+ ["mine","Go mining","job",3,"wed",0],
+ ["fish","Go fishing","farm",2,"thu",0]
+];
+function buildState(W){
+  const A=(y,s,d)=>(y-1)*YEAR+s*DAYS_PER_SEASON+d;
+  const N=A(W.y,W.s,W.d);
+  let sat=N; while(wdOf(fromAbs(sat).d)!==5) sat++;      // next Saturday
+  const T=(title,kind,w,rep,start)=>({id:uid(),title,kind,w,rep,start,done:{}});
+  const ev=n=>({t:"every",n,wd:[]}), wk=wd=>({t:"week",n:0,wd});
+  const tasks=[];
+  CHORES.forEach(c=>{
+    if(!W.chores.includes(c[0])) return;
+    const r=c[4];
+    if(r==="day")      tasks.push(T(c[1],c[2],c[3],ev(1),N));
+    else if(r==="alt") tasks.push(T(c[1],c[2],c[3],ev(2),N));
+    else if(r==="alt2")tasks.push(T(c[1],c[2],c[3],ev(2),N+1));
+    else if(r==="weekdays") tasks.push(T(c[1],c[2],c[3],wk([0,1,2,3,4]),N));
+    else if(r==="sun") tasks.push(T(c[1],c[2],c[3],wk([6]),N));
+    else if(r==="sat") tasks.push(T(c[1],c[2],c[3],wk([5]),N));
+    else if(r==="wed") tasks.push(T(c[1],c[2],c[3],wk([2]),N));
+    else if(r==="thu") tasks.push(T(c[1],c[2],c[3],wk([3]),N));
+    else if(r==="sat2a") tasks.push(T(c[1],c[2],c[3],ev(14),sat));
+    else if(r==="sat2b") tasks.push(T(c[1],c[2],c[3],ev(14),sat+7));
+  });
+  const vill={};
+  Object.keys(W.hearts||{}).forEach(n=>{
+    vill[n]={h:W.hearts[n],note:"",talked:{},gifted:{},
+      goal:(W.push||[]).includes(n)?"push":(W.hearts[n]>=8?"maintain":"rotate")};
+  });
+  (W.push||[]).forEach(n=>{ if(!vill[n]) vill[n]={h:0,note:"",talked:{},gifted:{},goal:"push"} });
+  return {date:{y:W.y,s:W.s,d:W.d}, cap:W.cap, roundsN:W.rounds, seen:true,
+          museum:{}, plots:[], rounds:{}, extra:{}, vill, tasks};
+}
+
+/* ============ SCHEDULE ENGINE ============ */
+function taskOn(t,a){
+  if(a<t.start) return false;
+  const diff=a-t.start;
+  if(t.rep.t==="every") return diff%Math.max(1,t.rep.n)===0;
+  if(t.rep.t==="week"){const {d}=fromAbs(a);return (t.rep.wd||[]).includes(wdOf(d))}
+  return diff===0;
+}
+function harvestsFor(p){
+  const c=CROPS.find(x=>x[0]===p.crop); if(!c) return [];
+  const [,seasons,grow,regrow]=c, out=[];
+  let a=p.start+grow, guard=0;
+  while(guard++<40){
+    const f=fromAbs(a);
+    if(!seasons.includes(f.s)) break;
+    out.push(a);
+    if(!regrow) break;
+    a+=regrow;
+  }
+  return out;
+}
+
+/* ---- who to visit tonight ---- */
+function lastGift(n){const g=(S.vill[n]||{}).gifted||{};let m=0;for(const k in g){if(+k>m)m=+k}return m}
+function tierOf(v){
+  const st=S.vill[v[0]]||{}, h=st.h||0, goal=st.goal||"rotate";
+  if(goal==="skip") return null;
+  if(goal==="push") return h>=8?30:100;
+  if(h<4 && (v[4]==="romance"||v[4]==="friend")) return 70;
+  if(h<8) return 50;
+  return 30;
+}
+function roundsFor(a){
+  S.rounds=S.rounds||{};
+  if(S.rounds[a]) return S.rounds[a];
+  const salt=a+(S.roundsShift||0)*97;
+  const jit=n=>{let h=0;for(let i=0;i<n.length;i++)h=(h*31+n.charCodeAt(i))|0;
+    return Math.abs((h^(salt*2654435761))|0)%7};
+  const scored=[];
+  VILLAGERS.forEach(v=>{const t=tierOf(v); if(t===null)return;
+    const lg=lastGift(v[0]), since=lg?Math.min(14,a-lg):14;
+    const pull=(t===30?5:2);   // long-neglected partners climb back up fast
+    scored.push({n:v[0],tier:t,s:t+since*pull+jit(v[0])});});
+  scored.sort((x,y)=>y.s-x.s);
+  const n=Math.max(1,S.roundsN||4), pick=[];
+  const other=scored.find(x=>x.tier<100);
+  if(other&&n>1) pick.push(other.n);                 // always one person you're still building from scratch
+  for(const x of scored){ if(pick.length>=n) break; if(!pick.includes(x.n)) pick.push(x.n) }
+  S.rounds[a]=pick; save(); return pick;
+}
+function giftHint(name){
+  const v=VILLAGERS.find(x=>x[0]===name); if(!v) return "";
+  const st=S.vill[name]||{}, h=st.h||0;
+  const loved=(v[5]||[])[0]||(v[6]||[])[0];
+  return h+" hearts"+(loved?" · loves "+loved:" · tastes unknown, try their colour");
+}
+function topPush(){
+  const c=VILLAGERS.filter(v=>(S.vill[v[0]]||{}).goal==="push"&&((S.vill[v[0]]||{}).h||0)<8)
+    .sort((x,y)=>((S.vill[y[0]]||{}).h||0)-((S.vill[x[0]]||{}).h||0));
+  return c.length?c[0][0]:null;
+}
+function agenda(a){
+  const f=fromAbs(a), items=[];
+  VILLAGERS.forEach(v=>{ if(v[2]===f.s && v[3]===f.d)
+    items.push({k:"social",t:v[0]+"'s birthday",n:"Give a loved gift for the big bonus",w:2,auto:"bday:"+v[0]}) });
+  FESTIVALS.forEach(x=>{ if(x[0]===f.s && x[1]===f.d)
+    items.push({k:"quest",t:x[2],n:"Festival tonight",w:2,auto:"fest:"+x[2]+f.d}) });
+  S.plots.forEach(p=>{ if(harvestsFor(p).includes(a))
+    items.push({k:"farm",t:"Harvest "+p.crop,n:p.qty>1?p.qty+" plots":"",w:1,auto:"harv:"+p.id+":"+a}) });
+  S.tasks.forEach(t=>{ if(taskOn(t,a))
+    items.push({k:t.kind,t:t.title,n:repLabel(t),w:t.w||1,id:t.id}) });
+  if(wdOf(f.d)===4){const p=topPush(); if(p)
+    items.push({k:"social",t:"Ask "+p+" on a date",n:"Fridays are for dates",w:1,auto:"date:"+a})}
+  if(a===today()) roundsFor(a).forEach(n=>
+    items.push({k:"social",t:"Gift "+n,n:giftHint(n),w:1,gift:n}));
+  else if(S.rounds&&S.rounds[a]) S.rounds[a].forEach(n=>
+    items.push({k:"social",t:"Gift "+n,n:giftHint(n),w:1,gift:n}));
+  else items.push({k:"social",t:"Gift rounds",n:(S.roundsN||4)+" visits, picked on the night",
+    w:S.roundsN||4,auto:"rounds:"+a});
+  return items;
+}
+function repLabel(t){
+  if(t.rep.t==="every") return "Every "+t.rep.n+" night"+(t.rep.n>1?"s":"");
+  if(t.rep.t==="week") return (t.rep.wd||[]).map(i=>DOW[i]).join(", ");
+  return "";
+}
+const loadOf=a=>agenda(a).reduce((n,i)=>n+i.w,0);
+function isDone(it,a){
+  if(it.gift){const st=S.vill[it.gift]; return !!(st&&st.gifted&&st.gifted[a])}
+  if(it.auto) return !!S.museum["_auto:"+it.auto];
+  const t=S.tasks.find(x=>x.id===it.id); return !!(t&&t.done&&t.done[a]);
+}
+function toggleDone(it,a){
+  if(it.gift){const st=S.vill[it.gift]||(S.vill[it.gift]={h:0,note:"",talked:{},gifted:{}});
+    st.gifted=st.gifted||{}; st.gifted[a]?delete st.gifted[a]:st.gifted[a]=1;
+    save();render();return}
+  if(it.auto){const k="_auto:"+it.auto; if(S.museum[k]) delete S.museum[k]; else S.museum[k]=1;}
+  else{const t=S.tasks.find(x=>x.id===it.id); if(!t)return; t.done=t.done||{};
+    if(t.done[a]) delete t.done[a]; else t.done[a]=1;}
+  save(); render();
+}
+
+/* ============ SHARED BITS ============ */
+function dateLine(){
+  const{y,s,d}=S.date;
+  return `${SEASON_ICON[SEASONS[s]]} ${SEASONS[s]} ${d} · ${DOW[wdOf(d)]} · Year ${y}`;
+}
+function loadBar(a){
+  const items=agenda(a), total=items.reduce((n,i)=>n+i.w,0), cap=S.cap;
+  const pct=Math.min(100,Math.round(total/cap*100));
+  const col=total>cap?"var(--blood)":total===cap?"var(--candle)":"var(--verdant)";
+  const cls=total>cap?"over":total>=cap?"warn":"";
+  const msg=total===0?"Nothing booked. A quiet night.":
+    total>cap?`Overloaded — ${total} of ${cap} points booked. Move something.`:
+    total>=cap?`Full night — ${total} of ${cap} points.`:
+    `${total} of ${cap} points booked. Room for more.`;
+  return `<div class="loadbar"><i style="width:${pct}%;background:${col}"></i></div>
+          <div class="loadnote ${cls}">${msg}</div>`;
+}
+function rowHTML(it,a){
+  const done=isDone(it,a);
+  return `<div class="row ${done?"done":""}">
+    <button class="tick ${done?"on":""}" data-tick="${esc(JSON.stringify(it))}" data-abs="${a}" aria-label="Mark done">✓</button>
+    ${it.gift?avatar(it.gift,"sm"):""}
+    <div class="rowbody"><b>${esc(it.t)}</b>
+      <small><span class="pill ${it.k}">${it.k}</span>${esc(it.n||"")}</small></div>
+    ${it.id?`<button class="xbtn" data-del="${it.id}" aria-label="Delete">×</button>`:""}
+  </div>`;
+}
+
+/* ============ VIEW: TONIGHT ============ */
+function vTonight(){
+  const a=today(), items=agenda(a);
+  const upcoming=[];
+  for(let i=1;i<=5;i++){const n=a+i, f=fromAbs(n), l=loadOf(n), ag=agenda(n);
+    upcoming.push({n,f,l,ag})}
+  const nextB=nextBirthdays(3);
+  return `
+  <section><div class="hero">
+    <h1>${SEASONS[S.date.s]} ${S.date.d}</h1>
+    <div class="sub">${DOW[wdOf(S.date.d)]} night · Year ${S.date.y}${S.date.d===28?" · last night of the season":""}</div>
+    ${loadBar(a)}
+  </div></section>
+
+  <section>
+    <div class="sechead"><h2>Tonight</h2><span class="meta">${items.filter(i=>isDone(i,a)).length}/${items.length} done</span></div>
+    <div class="card">${items.length?items.map(i=>rowHTML(i,a)).join(""):`<div class="empty">Nothing scheduled. Add something below, or enjoy the quiet.</div>`}</div>
+    <button class="btn ghost" id="quickadd">Add something for tonight</button>
+  </section>
+
+  <section>
+    <div class="sechead"><h2>The next five nights</h2></div>
+    <div class="card">
+      ${upcoming.map(u=>`<div class="row" style="align-items:center">
+        <div style="width:52px;flex:0 0 52px;text-align:center">
+          <b style="font-size:15px">${u.f.d}</b>
+          <small style="display:block">${DOW[wdOf(u.f.d)]}</small></div>
+        <div class="rowbody">
+          <div class="loadbar" style="margin-top:2px"><i style="width:${Math.min(100,u.l/S.cap*100)}%;background:${u.l>S.cap?"var(--blood)":"var(--verdant)"}"></i></div>
+          <small>${u.ag.length?esc(u.ag.map(x=>x.t).join(" · ")):"clear"}</small>
+        </div></div>`).join("")}
+    </div>
+  </section>
+
+  ${heartPanel()}
+
+  ${nextB.length?`<section>
+    <div class="sechead"><h2>Birthdays coming up</h2></div>
+    <div class="card">${nextB.map(b=>`<div class="row" style="align-items:center">
+      ${avatar(b.name,"sm")}
+      <div class="rowbody"><b>${esc(b.name)}</b>
+      <small>${SEASONS[b.s]} ${b.d} · in ${b.away} night${b.away===1?"":"s"}${b.loved?" · loves "+esc(b.loved):""}</small></div>
+      <button class="plantbtn" data-bremind="${esc(b.name)}">Remind</button></div>`).join("")}</div>
+  </section>`:""}
+
+  <section><div class="btnrow">
+    <button class="btn ghost" id="copytonight">Copy tonight's list</button>
+    <button class="btn ghost" id="balance">Balance the week</button>
+  </div></section>`;
+}
+
+function heartPanel(){
+  const push=VILLAGERS.filter(v=>(S.vill[v[0]]||{}).goal==="push");
+  if(!push.length) return "";
+  const rows=push.map(v=>{const h=(S.vill[v[0]]||{}).h||0;
+    return {n:v[0],h,left:Math.max(0,8-h)}}).sort((a,b)=>a.left-b.left||a.n.localeCompare(b.n));
+  const doneN=rows.filter(r=>!r.left).length;
+  return `<section>
+    <div class="sechead"><h2>Hearts to eight</h2><button class="meta" id="edithearts" style="color:var(--iris)">Update</button></div>
+    <div class="card">${rows.map(r=>`<div class="row" style="align-items:center">
+      ${avatar(r.n,"sm")}
+      <div class="rowbody"><b>${esc(r.n)}</b>
+        <div class="loadbar" style="margin-top:5px"><i style="width:${r.h/8*100}%;background:${r.left?"var(--blood)":"var(--verdant)"}"></i></div>
+        <small>${r.left?r.h+" hearts · "+r.left+" to go":"eight hearts — ready"}</small></div>
+      <button class="plantbtn" data-vill="${esc(r.n)}">Open</button></div>`).join("")}
+      <div class="tip" style="margin-top:12px">Leaning toward Noel? Marrying anyone locks the rest at four hearts, so finish this list first.</div>
+    </div>
+  </section>`;
+}
+function nextBirthdays(n){
+  const a=today(), out=[];
+  VILLAGERS.filter(v=>v[2]>=0).forEach(v=>{
+    for(let y=S.date.y;y<=S.date.y+1;y++){
+      const t=abs(y,v[2],v[3]);
+      if(t>=a){out.push({name:v[0],s:v[2],d:v[3],away:t-a,loved:(v[5]||[])[0]});break}
+    }
+  });
+  return out.sort((x,y)=>x.away-y.away).slice(0,n);
+}
+
+/* ============ VIEW: PLAN ============ */
+function vPlan(){
+  const a=today();
+  let cells="";
+  for(let d=1;d<=DAYS_PER_SEASON;d++){
+    const n=abs(S.date.y,planSeason,d), ag=agenda(n), l=ag.reduce((x,i)=>x+i.w,0);
+    const isT=(planSeason===S.date.s&&d===S.date.d&&true);
+    const past=n<a;
+    const bday=VILLAGERS.some(v=>v[2]===planSeason&&v[3]===d);
+    const fest=FESTIVALS.some(f=>f[0]===planSeason&&f[1]===d);
+    const kinds=[...new Set(ag.map(i=>i.k))].slice(0,4);
+    cells+=`<button class="day ${isT?"today":""} ${past?"past":""} ${planSel===d?"sel":""}" data-day="${d}">
+      <span class="n">${d}</span>
+      ${bday?'<span class="mark">🎂</span>':fest?'<span class="mark">✦</span>':""}
+      <span class="dots">${kinds.map(k=>`<i style="background:${kindCol(k)}"></i>`).join("")}</span>
+      ${l?`<span class="heat"><i style="width:${Math.min(100,l/S.cap*100)}%;background:${l>S.cap?"var(--blood)":"var(--verdant)"}"></i></span>`:""}
+    </button>`;
+  }
+  return `
+  <section>
+    <div class="seasontabs">${SEASONS.map((s,i)=>`<button data-season="${i}" class="${i===planSeason?"on":""}">${SEASON_ICON[s]} ${s.slice(0,3)}</button>`).join("")}</div>
+    <div class="dow">${DOW.map(d=>`<span>${d[0]}</span>`).join("")}</div>
+    <div class="grid" id="cal">${cells}</div>
+    <div class="tip">Every season is 28 nights, four tidy weeks — so a Monday is always a Monday. Tap any night to plan it.</div>
+  </section>
+  <section><button class="btn" id="addtask">Schedule something</button>
+  <button class="btn ghost" id="balance2">Balance the next seven nights</button></section>`;
+}
+const kindCol=k=>({farm:"var(--verdant)",social:"#f0a0b4",quest:"var(--candle)",job:"#8fc4e0",museum:"var(--iris)"}[k]||"var(--fog)");
+
+/* ============ VIEW: TOWN ============ */
+function vTown(){
+  const a=today();
+  const rows=VILLAGERS.map(v=>{
+    const st=S.vill[v[0]]||{};
+    let away=999;
+    if(v[2]>=0){for(let y=S.date.y;y<=S.date.y+1;y++){const t=abs(y,v[2],v[3]); if(t>=a){away=t-a;break}}}
+    const lg=lastGift(v[0]);
+    return {v,away,h:st.h||0,since:lg?a-lg:999,goal:st.goal||"rotate"}
+  });
+  const sorts={
+    birthday:(x,y)=>x.away-y.away,
+    hearts:(x,y)=>y.h-x.h||x.v[0].localeCompare(y.v[0]),
+    lowest:(x,y)=>x.h-y.h||x.v[0].localeCompare(y.v[0]),
+    visit:(x,y)=>y.since-x.since||x.h-y.h,
+    name:(x,y)=>x.v[0].localeCompare(y.v[0])
+  };
+  rows.sort(sorts[townSort]||sorts.birthday);
+  const gifted=Object.values(S.vill).filter(x=>x.gifted&&x.gifted[a]).length;
+  const sub=r=>{
+    if(townSort==="hearts"||townSort==="lowest") return r.h+(r.h===1?" heart":" hearts");
+    if(townSort==="visit") return r.since>900?"never gifted":r.since===0?"gifted tonight":r.since+"d ago";
+    return r.v[2]>=0?SEASONS[r.v[2]].slice(0,3)+" "+r.v[3]:"—";
+  };
+  return `
+  <section>
+    <div class="sechead"><h2>Town</h2><span class="meta">${gifted} gifted tonight</span></div>
+    <div class="chips" style="margin-bottom:11px">
+      ${[["birthday","Birthday next"],["lowest","Fewest hearts"],["hearts","Most hearts"],
+         ["visit","Longest unvisited"],["name","A–Z"]]
+        .map(([k,t])=>`<button class="chip ${townSort===k?"on":""}" data-ts="${k}">${t}</button>`).join("")}
+    </div>
+    <div class="vgrid">${rows.map(r=>{
+      const soon=r.away<=3;
+      return `<button class="vcard ${soon?"soon":""}" data-vill="${esc(r.v[0])}">
+        ${soon?`<span class="bdaytag">${r.away===0?"today":r.away+"d"}</span>`:""}
+        ${avatar(r.v[0])}
+        <b>${esc(r.v[0])}</b>
+        <small>${esc(sub(r))}</small>
+        <span class="hb">${"\u2665".repeat(Math.min(5,Math.ceil(r.h/2)))||"·"}</span>
+      </button>`}).join("")}</div>
+    <button class="btn ghost" id="edithearts">Update hearts</button>
+    <div class="tip">Gift colour usually matches the character. Purple tulips are the safe bet for almost everyone — except Noel, who dislikes nearly every flower. Seaweed is the one thing to avoid outright.</div>
+  </section>`;
+}
+
+/* ============ VIEW: MUSEUM ============ */
+function vMuseum(){
+  const wings=MUSEUM.map(w=>{
+    const items=w[2].concat(((S.extra||{})[w[0]])||[]);
+    const done=items.filter(i=>S.museum[i[0]]).length;
+    return{name:w[0],room:w[1],items,done,total:items.length}
+  });
+  const fdone=FARM_ROOM.filter(n=>S.museum[n]).length;
+  const all=wings.reduce((n,w)=>n+w.total,0)+FARM_ROOM.length;
+  const alld=wings.reduce((n,w)=>n+w.done,0)+fdone;
+  return `
+  <section>
+    <div class="hero">
+      <h1>${Math.round(alld/all*100)}% curated</h1>
+      <div class="sub">${alld} of ${all} pieces donated</div>
+      <div class="loadbar"><i style="width:${alld/all*100}%;background:var(--verdant)"></i></div>
+    </div>
+  </section>
+  <section>
+    ${wings.map((w,wi)=>`<div class="wing" data-wing="${wi}">
+      <button data-wtog="${wi}"><h3>${esc(w.name)}</h3>
+        <span class="wingbar"><i style="width:${w.done/w.total*100}%"></i></span>
+        <span class="pct">${w.done}/${w.total}</span></button>
+      <div class="items">${w.items.map(i=>`<div class="row">
+        <button class="tick ${S.museum[i[0]]?"on":""}" data-mus="${esc(i[0])}" aria-label="Donated">✓</button>
+        <div class="rowbody"><b>${esc(i[0])}</b><small>${esc(i[1])}</small></div></div>`).join("")}
+        <button class="plantbtn" style="margin:8px 0 4px" data-addmus="${esc(w.name)}">+ Add a piece</button></div>
+    </div>`).join("")}
+    <div class="wing" data-wing="farm">
+      <button data-wtog="farm"><h3>Farming Room</h3>
+        <span class="wingbar"><i style="width:${fdone/FARM_ROOM.length*100}%"></i></span>
+        <span class="pct">${fdone}/${FARM_ROOM.length}</span></button>
+      <div class="items">${FARM_ROOM.map(n=>`<div class="row">
+        <button class="tick ${S.museum[n]?"on":""}" data-mus="${esc(n)}" aria-label="Donated">✓</button>
+        <div class="rowbody"><b>${esc(n)}</b><small>${esc(cropSeasonLabel(n))}</small></div></div>`).join("")}</div>
+    </div>
+    <div class="tip">Fish of any quality count since 1.2.3. The Critter Room holds 95 pieces; 94 are documented on the wiki, so if you spot the missing one, use "+ Add a piece".</div>
+  </section>`;
+}
+function cropSeasonLabel(n){
+  const c=CROPS.find(x=>x[0]===n)||HERBS.find(x=>x[0]===n)||MUSHROOMS.find(x=>x[0]===n);
+  if(!c) return "";
+  const ss=c[1]||[]; return ss.map(i=>SEASONS[i]).join(" · ")||"";
+}
+
+/* ============ VIEW: FARM ============ */
+function vFarm(){
+  const a=today();
+  const growing=S.plots.map(p=>{
+    const hs=harvestsFor(p), next=hs.find(h=>h>=a);
+    return{p,next,left:next?next-a:null,total:hs.length,remaining:hs.filter(h=>h>=a).length}
+  }).sort((x,y)=>(x.left??999)-(y.left??999));
+  const pool=[...CROPS.map(c=>({n:c[0],ss:c[1],g:c[2],r:c[3],y:c[4],sell:c[5],seed:c[6],k:c[7]})),
+    ...HERBS.map(h=>({n:h[0],ss:h[1],g:0,r:0,y:0,sell:h[2],seed:h[3],k:"herb"})),
+    ...MUSHROOMS.map(m=>({n:m[0],ss:m[1],g:0,r:0,y:0,sell:0,seed:0,k:"mushroom"}))];
+  const shown=pool.filter(c=>{
+    if(farmQ && !c.n.toLowerCase().includes(farmQ.toLowerCase())) return false;
+    if(farmFilter==="now") return c.ss.includes(S.date.s);
+    if(farmFilter==="all") return true;
+    return c.ss.includes(+farmFilter);
+  }).sort((x,y)=>(x.g||99)-(y.g||99)||x.n.localeCompare(y.n));
+  const left=DAYS_PER_SEASON-S.date.d;
+  return `
+  ${growing.length?`<section>
+    <div class="sechead"><h2>In the ground</h2><span class="meta">${growing.length} planting${growing.length>1?"s":""}</span></div>
+    <div class="card">${growing.map(g=>`<div class="row" style="align-items:center">
+      <div class="rowbody"><b>${esc(g.p.crop)}${g.p.qty>1?" ×"+g.p.qty:""}</b>
+      <small>${g.left===null?"season's over — pull it up":g.left===0?"ready tonight":"ready in "+g.left+" night"+(g.left>1?"s":"")}${g.remaining>1?" · "+g.remaining+" harvests left":""}</small></div>
+      <button class="xbtn" data-plotdel="${g.p.id}">×</button></div>`).join("")}</div>
+  </section>`:""}
+  <section>
+    <div class="sechead"><h2>Seeds</h2><span class="meta">${left} night${left===1?"":"s"} left in ${SEASONS[S.date.s]}</span></div>
+    <div class="searchwrap"><input type="text" id="cropq" placeholder="Search seeds" value="${esc(farmQ)}"></div>
+    <div class="chips" style="margin-bottom:10px">
+      <button class="chip ${farmFilter==="now"?"on":""}" data-ff="now">In season now</button>
+      ${SEASONS.map((s,i)=>`<button class="chip ${farmFilter===String(i)?"on":""}" data-ff="${i}">${s}</button>`).join("")}
+      <button class="chip ${farmFilter==="all"?"on":""}" data-ff="all">All</button>
+    </div>
+    <div class="card">${shown.length?shown.map(c=>{
+      const nextS=(S.date.s+1)%4;
+      const fits=!c.g||c.g<=left||c.ss.includes(nextS);
+      return `<div class="croprow">
+        <div class="cn"><b>${esc(c.n)}</b>
+          <small>${c.ss.map(i=>`<span class="seasondot" style="background:${SEASON_COL[SEASONS[i]]}"></span>`).join("")}
+          ${c.g?c.g+"d":"instant"}${c.r?" · regrows "+c.r+"d":""}${c.sell?" · "+c.sell+"g":""}${c.seed?" · seed "+c.seed+"g":""}
+          ${NOTES[c.n]?"<br>"+esc(NOTES[c.n]):""}
+          ${c.g&&!fits?'<br><span style="color:var(--blood)">won&rsquo;t finish this season</span>':""}</small></div>
+        <button class="plantbtn" data-plant="${esc(c.n)}">Plant</button>
+      </div>`}).join(""):`<div class="empty">No seeds match that.</div>`}</div>
+  </section>`;
+}
+
+/* ============ SHEETS ============ */
+const sheet=document.getElementById("sheet");
+let sheetbox=document.getElementById("sheetbox");
+function openSheet(html){
+  const fresh=sheetbox.cloneNode(false);
+  sheetbox.parentNode.replaceChild(fresh,sheetbox);
+  sheetbox=fresh;
+  sheetbox.innerHTML='<div class="grab"></div>'+html;
+  fixImgs(sheetbox);
+  sheetbox.scrollTop=0;
+  sheet.classList.add("on");
+}
+function closeSheet(){sheet.classList.remove("on")}
+sheet.addEventListener("click",e=>{if(e.target===sheet)closeSheet()});
+
+function sheetTask(day){
+  const d=day||S.date.d, s=day?planSeason:S.date.s;
+  return openSheet(`
+    <h2 style="margin:0 0 2px">New task</h2>
+    <div style="color:var(--fog);font-size:13px">${SEASONS[s]} ${d}, ${DOW[wdOf(d)]}</div>
+    <label class="f">What needs doing</label>
+    <input type="text" id="t-title" placeholder="Water the wiccas" autocomplete="off">
+    <label class="f">Kind</label>
+    <div class="chips" id="t-kind">
+      ${["farm","social","quest","job","museum","other"].map((k,i)=>`<button class="chip ${i===0?"on":""}" data-k="${k}">${k}</button>`).join("")}
+    </div>
+    <label class="f">How much of the night does it eat?</label>
+    <div class="chips" id="t-w">
+      <button class="chip on" data-w="1">Quick (1)</button>
+      <button class="chip" data-w="2">A chunk (2)</button>
+      <button class="chip" data-w="3">Most of it (3)</button>
+    </div>
+    <label class="f">Repeat</label>
+    <div class="chips" id="t-rep">
+      <button class="chip on" data-r="none">Just once</button>
+      <button class="chip" data-r="every">Every N nights</button>
+      <button class="chip" data-r="week">Certain weekdays</button>
+    </div>
+    <div id="t-repopt"></div>
+    <button class="btn" id="t-save">Add to ${SEASONS[s]} ${d}</button>
+    <button class="btn ghost" onclick="closeSheet()">Cancel</button>`),
+    bindTaskSheet(s,d);
+}
+function bindTaskSheet(s,d){
+  let kind="farm",w=1,rep="none",n=3,wd=[];
+  const opt=()=>{const el=document.getElementById("t-repopt");
+    if(rep==="every") el.innerHTML=`<label class="f">Every how many nights?</label><input type="number" id="t-n" min="1" max="28" value="${n}">`;
+    else if(rep==="week") el.innerHTML=`<label class="f">Which nights?</label><div class="chips" id="t-wd">${DOW.map((x,i)=>`<button class="chip ${wd.includes(i)?"on":""}" data-wd="${i}">${x}</button>`).join("")}</div>`;
+    else el.innerHTML="";
+  };
+  opt();
+  sheetbox.addEventListener("click",e=>{
+    const k=e.target.closest("[data-k]"),ww=e.target.closest("[data-w]"),r=e.target.closest("[data-r]"),d2=e.target.closest("[data-wd]");
+    if(k){kind=k.dataset.k;k.parentNode.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",c===k))}
+    if(ww){w=+ww.dataset.w;ww.parentNode.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",c===ww))}
+    if(r){rep=r.dataset.r;r.parentNode.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",c===r));opt()}
+    if(d2){const i=+d2.dataset.wd; wd.includes(i)?wd=wd.filter(x=>x!==i):wd.push(i); d2.classList.toggle("on")}
+    if(e.target.id==="t-save"){
+      const title=document.getElementById("t-title").value.trim();
+      if(!title){toast("Give it a name first");return}
+      const nn=document.getElementById("t-n"); if(nn) n=Math.max(1,+nn.value||1);
+      if(rep==="week"&&!wd.length){toast("Pick at least one night");return}
+      S.tasks.push({id:uid(),title,kind,w,rep:{t:rep,n,wd:wd.slice()},start:abs(S.date.y,s,d),done:{}});
+      save();closeSheet();render();toast("Scheduled");
+    }
+  });
+}
+
+function sheetDay(d){
+  const a=abs(S.date.y,planSeason,d), items=agenda(a), l=items.reduce((n,i)=>n+i.w,0);
+  openSheet(`
+    <h2 style="margin:0 0 2px">${SEASONS[planSeason]} ${d}</h2>
+    <div style="color:var(--fog);font-size:13px">${DOW[wdOf(d)]} night${a===today()?" · tonight":""}</div>
+    ${loadBar(a)}
+    <div class="card" style="margin-top:14px">${items.length?items.map(i=>rowHTML(i,a)).join(""):'<div class="empty">Nothing planned for this night.</div>'}</div>
+    <button class="btn" id="d-add">Add to this night</button>
+    <button class="btn ghost" onclick="closeSheet()">Close</button>`);
+  document.getElementById("d-add").onclick=()=>sheetTask(d);
+}
+
+function sheetVill(name){
+  const v=VILLAGERS.find(x=>x[0]===name); if(!v)return;
+  const st=S.vill[name]||(S.vill[name]={h:0,note:"",talked:{},gifted:{}});
+  const a=today();
+  const bday=v[2]>=0?`${SEASONS[v[2]]} ${v[3]}`:"unknown";
+  const gl=arr=>arr.length?arr.map(x=>`<span class="pill">${esc(x)}</span>`).join(""):'<span style="color:var(--fog);font-size:13px">Not documented yet — try a flower in their colour.</span>';
+  openSheet(`
+    <div style="display:flex;gap:14px;align-items:center">
+      ${avatar(name,"lg")}
+      <div><h2 style="margin:0">${esc(name)}</h2>
+      <div style="color:var(--fog);font-size:13px">Birthday ${bday}${v[4]==="romance"?" · romanceable":""}</div></div>
+    </div>
+    <label class="f">Hearts</label>
+    <div class="hearts" id="v-h">${Array.from({length:10},(_,i)=>`<button data-h="${i+1}" class="${(st.h||0)>=i+1?"on":""}">♥</button>`).join("")}</div>
+    <label class="f">How hard are you working on them?</label>
+    <div class="chips" id="v-goal">
+      ${[["push","Push to 8"],["rotate","In rotation"],["maintain","Just maintain"],["skip","Leave alone"]]
+        .map(([k,t])=>`<button class="chip ${(st.goal||"rotate")===k?"on":""}" data-goal="${k}">${t}</button>`).join("")}
+    </div>
+    <label class="f">Tonight</label>
+    <div class="chips">
+      <button class="chip ${st.talked&&st.talked[a]?"on":""}" data-vt="talk">Talked</button>
+      <button class="chip ${st.gifted&&st.gifted[a]?"on":""}" data-vt="gift">Gifted</button>
+    </div>
+    <label class="f">Loves</label><div class="chips">${gl(v[5])}</div>
+    ${v[6].length?`<label class="f">Also likes</label><div class="chips">${gl(v[6])}</div>`:""}
+    ${v[7].length?`<label class="f">Don't bother</label><div class="chips" style="opacity:.75">${gl(v[7])}</div>`:""}
+    <label class="f">Your notes</label>
+    <textarea id="v-note" placeholder="Heart events seen, date preferences, what worked">${esc(st.note||"")}</textarea>
+    ${v[2]>=0?`<button class="btn ghost" data-bremind="${esc(name)}">Remind me the night before their birthday</button>`:""}
+    <button class="btn" onclick="closeSheet()">Done</button>`);
+  sheetbox.querySelector("#v-h").addEventListener("click",e=>{
+    const b=e.target.closest("[data-h]"); if(!b)return;
+    st.h=(st.h===+b.dataset.h)?+b.dataset.h-1:+b.dataset.h;
+    sheetbox.querySelectorAll("#v-h button").forEach((x,i)=>x.classList.toggle("on",i<st.h));
+    save();
+  });
+  sheetbox.querySelector("#v-goal").addEventListener("click",e=>{
+    const b=e.target.closest("[data-goal]"); if(!b)return;
+    st.goal=b.dataset.goal;
+    b.parentNode.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",c===b));
+    const a2=today(); if(S.rounds) delete S.rounds[a2];
+    save();
+  });
+  sheetbox.addEventListener("click",e=>{
+    const t=e.target.closest("[data-vt]"); if(!t)return;
+    const key=t.dataset.vt==="talk"?"talked":"gifted";
+    st[key]=st[key]||{}; st[key][a]?delete st[key][a]:st[key][a]=1;
+    t.classList.toggle("on"); save();
+  });
+  sheetbox.querySelector("#v-note").addEventListener("input",e=>{st.note=e.target.value;save()});
+}
+
+
+function resolveName(q){
+  const n=q.trim().toLowerCase().replace(/[.']/g,"");
+  if(!n) return null;
+  const names=VILLAGERS.map(v=>v[0]);
+  const norm=x=>x.toLowerCase().replace(/[.']/g,"");
+  let hit=names.filter(x=>norm(x)===n);
+  if(!hit.length) hit=names.filter(x=>norm(x).startsWith(n));
+  if(!hit.length) hit=names.filter(x=>norm(x).includes(n));
+  return hit.length===1?hit[0]:null;
+}
+function applyHearts(text){
+  const done=[], miss=[];
+  text.split(/[,;\n]+/).forEach(chunk=>{
+    const m=chunk.trim().match(/^(.*?)[\s:=-]*(\d{1,2})$/);
+    if(!m||!m[1].trim()) return;
+    const name=resolveName(m[1]), h=Math.max(0,Math.min(10,+m[2]));
+    if(!name){miss.push(chunk.trim());return}
+    const st=S.vill[name]||(S.vill[name]={h:0,note:"",talked:{},gifted:{},goal:"rotate"});
+    st.h=h; done.push(name+" "+h);
+  });
+  if(done.length){ if(S.rounds) delete S.rounds[today()]; save() }
+  return {done,miss};
+}
+function sheetHearts(){
+  const rows=VILLAGERS.map(v=>({n:v[0],h:(S.vill[v[0]]||{}).h||0}))
+    .sort((a,b)=>b.h-a.h||a.n.localeCompare(b.n));
+  openSheet(`
+    <h2 style="margin:0 0 2px">Update hearts</h2>
+    <div style="color:var(--fog);font-size:13px">Type the changes, or tap the arrows below.</div>
+    <label class="f">Paste or type, any order</label>
+    <textarea id="h-bulk" placeholder="Evan 5, Elvira 7, Noel 7, Llemi 1, Alina 5"></textarea>
+    <button class="btn" id="h-apply">Apply what I typed</button>
+    <div id="h-result"></div>
+    <label class="f">Everyone</label>
+    <div class="card" id="h-list">${rows.map(r=>`<div class="row" style="align-items:center">
+      ${avatar(r.n,"sm")}
+      <div class="rowbody"><b>${esc(r.n)}</b></div>
+      <button class="step" data-hm="${esc(r.n)}">−</button>
+      <span class="hval" data-hv="${esc(r.n)}">${r.h}</span>
+      <button class="step" data-hp="${esc(r.n)}">+</button>
+    </div>`).join("")}</div>
+    <button class="btn ghost" onclick="closeSheet()">Done</button>`);
+  document.getElementById("h-apply").onclick=()=>{
+    const r=applyHearts(document.getElementById("h-bulk").value);
+    const el=document.getElementById("h-result");
+    el.innerHTML=`<div class="tip">${r.done.length?"Updated: "+esc(r.done.join(", ")):"Nothing matched a name."}
+      ${r.miss.length?"<br>Couldn't place: "+esc(r.miss.join(", ")):""}</div>`;
+    r.done.forEach(d=>{const n=d.slice(0,d.lastIndexOf(" "));
+      const v=document.querySelector('[data-hv="'+CSS.escape(n)+'"]'); if(v)v.textContent=d.slice(d.lastIndexOf(" ")+1)});
+    if(r.done.length) toast("Hearts updated");
+  };
+  document.getElementById("h-list").addEventListener("click",e=>{
+    const m=e.target.closest("[data-hm]"), pl=e.target.closest("[data-hp]");
+    const name=(m&&m.dataset.hm)||(pl&&pl.dataset.hp); if(!name) return;
+    const st=S.vill[name]||(S.vill[name]={h:0,note:"",talked:{},gifted:{},goal:"rotate"});
+    st.h=Math.max(0,Math.min(10,(st.h||0)+(pl?1:-1)));
+    const v=document.querySelector('[data-hv="'+CSS.escape(name)+'"]'); if(v)v.textContent=st.h;
+    if(S.rounds) delete S.rounds[today()];
+    save();
+  });
+}
+
+/* ============ FIRST-RUN WIZARD ============ */
+let W=null, wStep=0;
+function startWizard(reset){
+  W={y:1,s:0,d:1,cap:14,rounds:4,chores:CHORES.filter(c=>c[5]).map(c=>c[0]),hearts:{},push:[],reset:!!reset};
+  wStep=0; drawWizard();
+}
+function wizDone(){
+  const built=buildState(W);
+  S=Object.assign(S,built);
+  if(W.reset){S.museum={};S.plots=[];S.extra={}}
+  save();
+  document.getElementById("wiz").classList.remove("on");
+  planSeason=S.date.s; render();
+  toast("You're set up");
+}
+function drawWizard(){
+  const el=document.getElementById("wiz");
+  el.classList.add("on");
+  const steps=[wDate,wChores,wHearts,wFocus,wCap];
+  el.innerHTML=`<div class="wizbox">
+    <div class="wizdots">${steps.map((_,i)=>`<i class="${i===wStep?"on":""}"></i>`).join("")}</div>
+    ${steps[wStep]()}
+  </div>`;
+}
+const wNav=(label,last)=>`<div class="btnrow" style="margin-top:18px">
+  ${wStep?'<button class="btn ghost" data-wz="back">Back</button>':""}
+  <button class="btn" data-wz="${last?"done":"next"}">${label}</button></div>`;
+
+function wDate(){
+  return `<h1 style="margin:0 0 4px;font-size:24px">Where are you?</h1>
+  <p class="wizsub">Seasons run 28 nights, four exact weeks, so day 1 is always a Monday.</p>
+  <label class="f">Season</label>
+  <div class="chips" data-wchips="s">${SEASONS.map((x,i)=>
+    `<button class="chip ${i===W.s?"on":""}" data-wv="${i}">${SEASON_ICON[x]} ${x}</button>`).join("")}</div>
+  <label class="f">Day of the season</label>
+  <input type="number" id="w-d" min="1" max="28" value="${W.d}">
+  <label class="f">Year</label>
+  <input type="number" id="w-y" min="1" max="99" value="${W.y}">
+  ${wNav("Next")}`;
+}
+function wChores(){
+  return `<h1 style="margin:0 0 4px;font-size:24px">Your nightly routine</h1>
+  <p class="wizsub">Pick what you do on a normal night. Everything here becomes a repeating task you can edit or delete later.</p>
+  <div class="chips" data-wmulti="chores">${CHORES.map(c=>
+    `<button class="chip ${W.chores.includes(c[0])?"on":""}" data-wv="${c[0]}">${c[1]}</button>`).join("")}</div>
+  <div class="tip">Pet and plant land on alternating nights. Fodder and fireflies alternate Saturdays. Shops go Monday to Friday.</div>
+  ${wNav("Next")}`;
+}
+function wHearts(){
+  const n=Object.keys(W.hearts).length;
+  return `<h1 style="margin:0 0 4px;font-size:24px">Your relationships</h1>
+  <p class="wizsub">Type anyone you've already befriended, with their heart count. Any order, partial names are fine. Skip it if you're starting fresh.</p>
+  <textarea id="w-h" style="min-height:120px" placeholder="Luna 8, Mina 8, Orlock 7, Noel 6, Kim 2">${
+    Object.entries(W.hearts).map(([k,v])=>k+" "+v).join(", ")}</textarea>
+  <div class="tip" id="w-hres">${n?n+" people recorded.":"Everyone starts at zero hearts until you enter something."}</div>
+  ${wNav("Next")}`;
+}
+function wFocus(){
+  const known=Object.keys(W.hearts).sort((a,b)=>W.hearts[b]-W.hearts[a]);
+  const pool=known.length?known:VILLAGERS.filter(v=>v[4]==="romance").map(v=>v[0]);
+  return `<h1 style="margin:0 0 4px;font-size:24px">Who are you working on?</h1>
+  <p class="wizsub">These get priority in the nightly visit list. Everyone else still cycles through, with one slot each night reserved for whoever you've neglected longest.</p>
+  <div class="chips" data-wmulti="push">${pool.map(n=>
+    `<button class="chip ${W.push.includes(n)?"on":""}" data-wv="${esc(n)}">${esc(n)}${W.hearts[n]?" "+W.hearts[n]:""}</button>`).join("")}</div>
+  <label class="f">People to visit each night</label>
+  <input type="number" id="w-r" min="1" max="10" value="${W.rounds}">
+  ${wNav("Next")}`;
+}
+function wCap(){
+  return `<h1 style="margin:0 0 4px;font-size:24px">How full is a night?</h1>
+  <p class="wizsub">Every task is worth points — a quick errand 1, a mining run 3. Set the ceiling for a night that feels comfortable and the planner warns you past it.</p>
+  <label class="f">Points in a full night</label>
+  <input type="number" id="w-cap" min="4" max="30" value="${W.cap}">
+  <div class="tip">A routine of six daily chores plus four visits lands around 12. If you're not sure, leave it — you can change it any time by tapping the moon.</div>
+  <div class="tip" style="background:rgba(120,196,151,.09);border-color:rgba(120,196,151,.3)">
+    Museum pieces aren't asked for here — there are 209 of them. Open the Museum tab and tick off whatever you've already donated whenever you like.</div>
+  ${wNav("Start planning",true)}`;
+}
+function wizClick(e){
+  const c=e.target.closest("[data-wv]");
+  if(c){
+    const single=c.closest("[data-wchips]"), multi=c.closest("[data-wmulti]");
+    if(single){ W[single.dataset.wchips]=+c.dataset.wv;
+      single.querySelectorAll(".chip").forEach(x=>x.classList.toggle("on",x===c)); }
+    if(multi){ const k=multi.dataset.wmulti, v=c.dataset.wv;
+      W[k].includes(v)?W[k]=W[k].filter(x=>x!==v):W[k].push(v); c.classList.toggle("on"); }
+    return;
+  }
+  const b=e.target.closest("[data-wz]"); if(!b) return;
+  wizSave();
+  if(b.dataset.wz==="back"){wStep--;drawWizard();return}
+  if(b.dataset.wz==="next"){wStep++;drawWizard();return}
+  wizDone();
+}
+function wizSave(){
+  const d=document.getElementById("w-d"), y=document.getElementById("w-y");
+  if(d) W.d=Math.min(28,Math.max(1,+d.value||1));
+  if(y) W.y=Math.max(1,+y.value||1);
+  const h=document.getElementById("w-h");
+  if(h){ W.hearts={};
+    h.value.split(/[,;\n]+/).forEach(ch=>{
+      const m=ch.trim().match(/^(.*?)[\s:=-]*(\d{1,2})$/); if(!m||!m[1].trim())return;
+      const nm=resolveName(m[1]); if(nm) W.hearts[nm]=Math.max(0,Math.min(10,+m[2]));
+    });
+    W.push=W.push.filter(n=>W.hearts[n]||!Object.keys(W.hearts).length);
+  }
+  const r=document.getElementById("w-r"); if(r) W.rounds=Math.max(1,+r.value||4);
+  const c=document.getElementById("w-cap"); if(c) W.cap=Math.max(4,+c.value||14);
+}
+
+function sheetSettings(){
+  openSheet(`
+    <h2 style="margin:0 0 6px">Where are you?</h2>
+    <label class="f">Season</label>
+    <div class="chips" id="s-season">${SEASONS.map((s,i)=>`<button class="chip ${i===S.date.s?"on":""}" data-ss="${i}">${SEASON_ICON[s]} ${s}</button>`).join("")}</div>
+    <label class="f">Day of the season (1–28)</label>
+    <input type="number" id="s-day" min="1" max="28" value="${S.date.d}">
+    <label class="f">Year</label>
+    <input type="number" id="s-year" min="1" max="99" value="${S.date.y}">
+    <label class="f">People to visit each night</label>
+    <input type="number" id="s-rounds" min="1" max="10" value="${S.roundsN||4}">
+    <label class="f">How many points is a full night for you?</label>
+    <input type="number" id="s-cap" min="2" max="12" value="${S.cap}">
+    <div class="tip">A quick errand is 1 point, a proper job or dungeon run is 3. Set the cap to whatever a comfortable night feels like — the planner warns you past it.</div>
+    <button class="btn" id="s-save">Save</button>
+    <button class="btn ghost" id="s-reshuffle">Pick different people for tonight</button>
+    <button class="btn ghost" id="s-export">Copy a backup of everything</button>
+    <button class="btn ghost" id="s-import">Restore from a backup</button>
+    <button class="btn ghost" id="s-wizard">Run setup again</button>
+    <button class="btn danger" id="s-reset">Erase everything</button>`);
+  let ss=S.date.s;
+  sheetbox.querySelector("#s-season").onclick=e=>{const b=e.target.closest("[data-ss]");if(!b)return;
+    ss=+b.dataset.ss;b.parentNode.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",c===b))};
+  document.getElementById("s-save").onclick=()=>{
+    S.date.s=ss; S.date.d=Math.min(28,Math.max(1,+document.getElementById("s-day").value||1));
+    S.date.y=Math.max(1,+document.getElementById("s-year").value||1);
+    S.cap=Math.max(2,+document.getElementById("s-cap").value||5);
+    const rn=Math.max(1,+document.getElementById("s-rounds").value||4);
+    if(rn!==S.roundsN){S.roundsN=rn; S.rounds={}}
+    planSeason=S.date.s; save();closeSheet();render();toast("Calendar set");
+  };
+  document.getElementById("s-reshuffle").onclick=()=>{
+    if(S.rounds) delete S.rounds[today()];
+    const skip=(S.roundsShift||0)+1; S.roundsShift=skip;
+    save();closeSheet();render();toast("New round picked");
+  };
+  document.getElementById("s-export").onclick=()=>{copy(JSON.stringify(S));toast("Backup copied")};
+  document.getElementById("s-import").onclick=()=>{
+    const raw=prompt("Paste your backup"); if(!raw)return;
+    try{S=Object.assign(S,JSON.parse(raw));save();closeSheet();render();toast("Restored")}
+    catch(e){toast("That backup didn't parse")}
+  };
+  document.getElementById("s-wizard").onclick=()=>{
+    if(!confirm("Run setup again? Your date, routine and hearts get rebuilt from your answers. Museum ticks and plantings are kept."))return;
+    closeSheet(); startWizard(false);
+  };
+  document.getElementById("s-reset").onclick=()=>{
+    if(!confirm("Erase everything — tasks, hearts, museum, plantings? This can't be undone."))return;
+    S={date:{y:1,s:0,d:1},cap:14,roundsN:4,tasks:[],museum:{},vill:{},plots:[],rounds:{},extra:{},seen:false};
+    save();closeSheet();startWizard(true);
+  };
+}
+
+function sheetPlant(crop){
+  const c=CROPS.find(x=>x[0]===crop);
+  const grow=c?c[2]:0, regrow=c?c[3]:0;
+  openSheet(`
+    <h2 style="margin:0 0 2px">Plant ${esc(crop)}</h2>
+    <div style="color:var(--fog);font-size:13px">${grow?grow+" nights to grow":"grows the night you water it"}${regrow?" · then every "+regrow:""}</div>
+    <label class="f">Planting on</label>
+    <div class="chips" id="p-when">
+      <button class="chip on" data-pw="0">Tonight</button>
+      <button class="chip" data-pw="1">Tomorrow</button>
+      <button class="chip" data-pw="pick">Another night</button>
+    </div>
+    <div id="p-pick"></div>
+    <label class="f">How many plots?</label>
+    <input type="number" id="p-qty" min="1" max="99" value="1">
+    <div id="p-preview" class="tip"></div>
+    <button class="btn" id="p-go">Add to the calendar</button>
+    <button class="btn ghost" onclick="closeSheet()">Cancel</button>`);
+  let offset=0;
+  const prev=()=>{
+    const start=today()+offset;
+    const fake={crop,start,id:"x"};
+    const hs=harvestsFor(fake);
+    const el=document.getElementById("p-preview");
+    if(!hs.length){el.innerHTML="Nothing to harvest — that crop won't reach maturity before the season turns.";return}
+    el.innerHTML="Harvest nights: "+hs.map(h=>{const f=fromAbs(h);return SEASONS[f.s].slice(0,3)+" "+f.d}).join(", ")+
+      ". Each one gets a task on that night.";
+  };
+  prev();
+  document.getElementById("p-when").onclick=e=>{
+    const b=e.target.closest("[data-pw]"); if(!b)return;
+    b.parentNode.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",c===b));
+    if(b.dataset.pw==="pick"){
+      document.getElementById("p-pick").innerHTML=`<label class="f">Nights from tonight</label><input type="number" id="p-off" min="0" max="111" value="${offset}">`;
+      document.getElementById("p-off").oninput=e2=>{offset=Math.max(0,+e2.target.value||0);prev()};
+    }else{document.getElementById("p-pick").innerHTML="";offset=+b.dataset.pw;prev()}
+  };
+  document.getElementById("p-go").onclick=()=>{
+    const qty=Math.max(1,+document.getElementById("p-qty").value||1);
+    S.plots.push({id:uid(),crop,start:today()+offset,qty});
+    save();closeSheet();render();toast(crop+" planted");
+  };
+}
+
+/* ============ ACTIONS ============ */
+function copy(text){
+  const ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";
+  document.body.appendChild(ta);ta.select();try{document.execCommand("copy")}catch(e){}
+  document.body.removeChild(ta);
+}
+function copyTonight(){
+  const a=today(), items=agenda(a);
+  if(!items.length){toast("Nothing to copy");return}
+  copy(`${SEASONS[S.date.s]} ${S.date.d} (${DOW[wdOf(S.date.d)]})\n`+items.map(i=>"• "+i.t).join("\n"));
+  toast("Copied — paste it into Reminders");
+}
+function balanceWeek(){
+  const a=today(); let moved=0;
+  for(let i=0;i<7;i++){
+    const day=a+i; let l=loadOf(day);
+    while(l>S.cap){
+      const movable=S.tasks.filter(t=>t.rep.t==="none"&&t.start===day&&!(t.done&&t.done[day]))
+        .sort((x,y)=>(y.w||1)-(x.w||1));
+      if(!movable.length) break;
+      let best=null,bestL=99;
+      for(let j=0;j<7;j++){const cand=a+j; if(cand===day)continue;
+        const cl=loadOf(cand); if(cl<bestL){bestL=cl;best=cand}}
+      if(best===null||bestL+(movable[0].w||1)>S.cap) break;
+      movable[0].start=best; moved++; l=loadOf(day);
+    }
+  }
+  save();render();
+  toast(moved?`Moved ${moved} task${moved>1?"s":""} to lighter nights`:"Already spread out nicely");
+}
+function birthdayReminder(name){
+  const v=VILLAGERS.find(x=>x[0]===name); if(!v||v[2]<0)return;
+  const bd=abs(S.date.y,v[2],v[3]);
+  const start=(bd-1>=today())?bd-1:abs(S.date.y+1,v[2],v[3])-1;
+  const loved=(v[5]||[])[0];
+  S.tasks.push({id:uid(),title:"Wrap a gift for "+name,kind:"social",w:1,
+    rep:{t:"every",n:YEAR,wd:[]},start,done:{},
+    });
+  save();render();
+  toast(loved?`Reminder set — ${name} loves ${loved}`:"Reminder set the night before");
+}
+
+/* ============ RENDER + EVENTS ============ */
+function render(){
+  document.getElementById("dialday").textContent=S.date.d;
+  document.querySelector(".moondial").style.setProperty("--fill",(S.date.d/28*360)+"deg");
+  document.getElementById("dateinfo").innerHTML=
+    `<b>${SEASONS[S.date.s]} ${S.date.d}</b><span>${DOW[wdOf(S.date.d)]} · Year ${S.date.y} · ${dailyHint()}</span>`;
+  const map={tonight:vTonight,plan:vPlan,town:vTown,museum:vMuseum,farm:vFarm};
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("on"));
+  const el=document.getElementById("v-"+view);
+  el.innerHTML=map[view](); el.classList.add("on");
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===view));
+  fixImgs(el); fixImgs(sheetbox);
+}
+function fixImgs(root){
+  if(!root) return;
+  root.querySelectorAll("img[data-fb]").forEach(img=>{
+    img.onerror=()=>img.remove();
+    if(img.complete&&img.naturalWidth===0) img.remove();
+  });
+}
+function dailyHint(){
+  const a=today(), items=agenda(a), l=items.reduce((n,i)=>n+i.w,0);
+  const bd=VILLAGERS.find(v=>v[2]===S.date.s&&v[3]===S.date.d);
+  if(bd) return bd[0]+"'s birthday";
+  const f=FESTIVALS.find(x=>x[0]===S.date.s&&x[1]===S.date.d);
+  if(f) return f[2];
+  return l?l+" points booked":"nothing booked";
+}
+
+document.getElementById("wiz").addEventListener("click",wizClick);
+document.addEventListener("click",e=>{
+  if(e.target.closest("#wiz")) return;
+  const t=e.target;
+  const nav=t.closest("nav button");
+  if(nav){view=nav.dataset.v; if(view==="plan")planSeason=S.date.s; render(); window.scrollTo(0,0); return}
+  if(t.closest("#dial")) return sheetSettings();
+  if(t.closest("#nextnight")){
+    S.date.d++; if(S.date.d>28){S.date.d=1;S.date.s++; if(S.date.s>3){S.date.s=0;S.date.y++}}
+    planSeason=S.date.s; save();render();
+    const l=loadOf(today());
+    toast(l?`${SEASONS[S.date.s]} ${S.date.d} — ${l} points ahead`:`${SEASONS[S.date.s]} ${S.date.d} — clear night`);
+    window.scrollTo(0,0); return;
+  }
+  const tick=t.closest("[data-tick]");
+  if(tick){toggleDone(JSON.parse(tick.dataset.tick),+tick.dataset.abs); if(sheet.classList.contains("on"))closeSheet(); return}
+  const del=t.closest("[data-del]");
+  if(del){S.tasks=S.tasks.filter(x=>x.id!==del.dataset.del);save();render();closeSheet();toast("Removed");return}
+  const pd=t.closest("[data-plotdel]");
+  if(pd){S.plots=S.plots.filter(x=>x.id!==pd.dataset.plotdel);save();render();toast("Cleared the plot");return}
+  const day=t.closest("[data-day]");
+  if(day){planSel=+day.dataset.day;render();sheetDay(planSel);return}
+  const se=t.closest("[data-season]");
+  if(se){planSeason=+se.dataset.season;render();return}
+  const ts=t.closest("[data-ts]");
+  if(ts){townSort=ts.dataset.ts;render();return}
+  const v=t.closest("[data-vill]");
+  if(v){sheetVill(v.dataset.vill);return}
+  const wt=t.closest("[data-wtog]");
+  if(wt){wt.parentNode.classList.toggle("open");return}
+  const am=t.closest("[data-addmus]");
+  if(am){const n=prompt("What's the piece called?"); if(n&&n.trim()){
+    S.extra=S.extra||{}; (S.extra[am.dataset.addmus]=S.extra[am.dataset.addmus]||[]).push([n.trim(),"added by you"]);
+    save();render();} return}
+  const mu=t.closest("[data-mus]");
+  if(mu){const n=mu.dataset.mus; S.museum[n]?delete S.museum[n]:S.museum[n]=1; save();
+    mu.classList.toggle("on");
+    const w=mu.closest(".wing"); if(w){const open=w.classList.contains("open");render();
+      const w2=document.querySelector('[data-wing="'+w.dataset.wing+'"]'); if(w2&&open)w2.classList.add("open");}
+    return}
+  const pl=t.closest("[data-plant]");
+  if(pl){sheetPlant(pl.dataset.plant);return}
+  const ff=t.closest("[data-ff]");
+  if(ff){farmFilter=ff.dataset.ff;render();return}
+  const br=t.closest("[data-bremind]");
+  if(br){birthdayReminder(br.dataset.bremind);closeSheet();return}
+  if(t.id==="quickadd"||t.id==="addtask") return sheetTask(view==="plan"?(planSel||S.date.d):null);
+  if(t.id==="nosave-backup"){copy(JSON.stringify(S));toast("Backup copied — paste it somewhere safe");return}
+  if(t.id==="edithearts") return sheetHearts();
+  if(t.id==="copytonight") return copyTonight();
+  if(t.id==="balance"||t.id==="balance2") return balanceWeek();
+});
+document.addEventListener("input",e=>{
+  if(e.target.id==="cropq"){farmQ=e.target.value;const p=e.target.selectionStart;render();
+    const n=document.getElementById("cropq"); if(n){n.focus();n.setSelectionRange(p,p)}}
+});
+
+(async function(){
+  await load();
+  planSeason=S.date.s;
+  render();
+  if(!S.seen) startWizard(false);
+  if(storageMode==="none"){
+    const b=document.getElementById("nosave"); if(b) b.style.display="flex";
+  }
+})();
+</script>
+</body>
+</html>
